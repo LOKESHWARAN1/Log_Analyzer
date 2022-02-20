@@ -1,5 +1,8 @@
+import java.io.FileNotFoundException
 import scala.collection.mutable.ListBuffer
 import scala.reflect.io.File
+import scala.io.Source.fromFile
+import scala.util.matching.Regex
 
 class ProcessLogFile {
 
@@ -20,12 +23,31 @@ class ProcessLogFile {
   /** read that log file.
     * @param filePath give the log file path.
     */
-  def readLogFile(filePath: String) = {}
+  protected def readLogFile(filePath: String): String = {
+    try {
+      fromFile(filePath).mkString("")
+    } catch {
+      case f: FileNotFoundException => s"file not found given path."
+      case e: Exception             => "Exception the read log file."
+    }
+  }
 
   /** process of task name and time matching.
     * @param strLogContent give the string of log content.
     */
-  def jobPatternMatching(strLogContent: String) = {}
+  def jobPatternMatching(strLogContent: String): String = {
+    val jobPatternMatchingRegex =
+      """[\w]+[(]([\w \-_,/]+)?[)]+[:]+[\w]+[ |]+[0-9]+[msMS ]+""".r
+    val processNameMatchingRegex = """[\w]+[(]([\w \-_,/]+)?[)]+""".r
+    val processTimeMatchingRegex = """[0-9 ]+[msMS]+""".r
+
+    val fullLineMatchString = jobPatternMatchingRegex
+      .findAllMatchIn(strLogContent)
+      .mkString("")
+    processNameMatchingRegex.findAllMatchIn(fullLineMatchString).mkString("")
+    processTimeMatchingRegex.findAllMatchIn(fullLineMatchString).mkString("")
+//      .mkString("") //.toArray
+  }
 
   /** process of task names return the unique process of task names.
     * @param matchString process of task names and times.
