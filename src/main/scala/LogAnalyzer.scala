@@ -2,60 +2,76 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.lang3.time.StopWatch
 
 import java.io.PrintWriter
+import java.util.Date
 import scala.collection.mutable.ArrayBuffer
 
 class LogAnalyzer extends ProcessLogFile with LazyLogging {
 
   /** given the log file path and performing the operation and return the csv file.
     * @param logFilePath give the log file path.
+    * @param outputCSVFilePath give the output log file.
+    * @return log file analyze return the csv file.
     */
   def analyzeLogFile(
-      logFilePath: String
+      logFilePath: String,
+      outputCSVFilePath: String
   ): Any = {
     val stopWatch = new StopWatch()
     stopWatch.start()
     logger.info("analyzeLogFile()::entry")
     val isFileExtension = checkFileExtension(logFilePath)
     if (isFileExtension) {
-      val contentFile = readLogFile(logFilePath)
-      val jobPatternMatch = jobPatternMatching(contentFile)
-      val uniqueStr = strUniqueValue(jobPatternMatch)
-      val processMin = processMinValue(jobPatternMatch)
-      val processMax = processMaxValue(jobPatternMatch)
-      val processMean = processMeanValue(jobPatternMatch)
-      val csvFileConvert =
-        summariseLogContent(uniqueStr, processMin, processMax, processMean)
-      contentFile match {
+      val fileContent = readLogFile(logFilePath)
+      fileContent match {
         case "file not found given path." =>
-          return "file not found given path."
+          "file not found given path."
         case "Exception the read log file." =>
-          return "Exception the read log file."
+          "Exception the read log file."
         case _ =>
-          jobPatternMatch.map(x => x._1).mkString("") match {
-            case "Process name and time length is not same." =>
-              return "Process name and time length is not same."
-            case _ => uniqueStr
-
+          val csvFilePath = createCSVFilePath(outputCSVFilePath)
+          csvFilePath match {
+            case "give the valid output csv path. Example of valid path=> /home/profile/IdeaProjects/Log_Analyzer/logFile/" =>
+              "give the valid output csv path. Example of valid path is => /home/profile/IdeaProjects/Log_Analyzer/logFile/"
+            case _ =>
+              val jobPatternMatch = jobPatternMatching(fileContent)
+              jobPatternMatch.map(x => x._1).mkString("") match {
+                case "Process name and time length is not same." =>
+                  "Process name and time length is not same."
+                case _ =>
+                  val uniqueStr = strUniqueValue(jobPatternMatch)
+                  val processTimeMin = processMinValue(jobPatternMatch)
+                  val processTimeMax = processMaxValue(jobPatternMatch)
+                  val processTimeMean = processMeanValue(jobPatternMatch)
+                  val csvFileConvert =
+                    summariseLogContent(
+                      csvFilePath,
+                      uniqueStr,
+                      processTimeMin,
+                      processTimeMax,
+                      processTimeMean
+                    )
+                  csvFileConvert match {
+                    case "Data length is not Equal to Process name,Process Minimum Time and Process Maximum Time" =>
+                      "Data length is not Equal to Process name,Process Minimum Time and Process Maximum Time"
+                    case _ =>
+                      stopWatch.stop()
+                      logger.info(
+                        "analyzeLogFile()::normal_exit | " + stopWatch
+                          .getTime() + " ms "
+                      )
+                      s"CSV File Is Created Successfully. The File Path is $csvFilePath"
+                  }
+              }
           }
       }
     } else {
-      return "Invalid log file or file path"
+      stopWatch.stop()
+      logger.debug(
+        "analyzeLogFile()::normal_exit | " + stopWatch
+          .getTime() + " ms "
+      )
+      "Invalid log file or file path"
     }
-//    if (fileExtension) {
-//      stopWatch.stop()
-//      logger.info(
-//        "analyzeLogFile()::normal_exit | " + stopWatch
-//          .getTime() + " ms "
-//      )
-//    } else {
-//      stopWatch.stop()
-//      logger.debug(
-//        "analyzeLogFile()::normal_exit | " + stopWatch
-//          .getTime() + " ms "
-//      )
-//      return "Invalid log file or file path"
-//    }
-    csvFileConvert
   }
 
   /** Given the unique Process of task name and Process of task taking time of minimum,maximum and average the data write to csv file.
@@ -63,8 +79,10 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
     * @param miniValue process of task taking minimum time.
     * @param maxValue process of task taking maximum time.
     * @param meanValue process of task taking total time of meanValue.
+    * @return perform the operation return the csv file.
     */
   def summariseLogContent(
+      csvFilePath: String,
       uniqueStr: ArrayBuffer[String],
       miniValue: ArrayBuffer[Int],
       maxValue: ArrayBuffer[Int],
@@ -75,9 +93,7 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
     logger.info(
       "summariseLogContent(uniqueStr,miniValue,maxValue,meanValue)::entry"
     )
-    val csvFileCreate = new PrintWriter(
-      "logFile/log-analyzer.csv"
-    )
+    val csvFileCreate = new PrintWriter(csvFilePath)
     var count = 1
     var strCSV = ""
     try {
@@ -100,7 +116,7 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
           "summariseLogContent(uniqueStr,miniValue,maxValue,meanValue)::error | " + stopWatch
             .getTime() + " ms "
         )
-        return "Values of Data Index is mismatch."
+        return "Data length is not Equal to Process name,Process Minimum Time and Process Maximum Time"
     }
     csvFileCreate.write(strCSV)
     csvFileCreate.close()
@@ -116,11 +132,10 @@ object LogAnalyzerObject extends App {
   val logAnalyzerObject = new LogAnalyzer
   println(
     logAnalyzerObject
-      .analyzeLogFile(logFilePath = "logFile/expert-system.log")
-//      ._1
-//      .length
-//      .mkString("Array(", ", ", ")")
-//      .length
+      .analyzeLogFile(
+        logFilePath = "logFile/expert-system.log",
+        "/home/lokeshwaranm/Documents/"
+      )
   )
 
 }

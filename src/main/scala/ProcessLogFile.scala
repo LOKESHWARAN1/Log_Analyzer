@@ -10,28 +10,75 @@ class ProcessLogFile extends LazyLogging {
 
   /** Given the file path and check the file extension.
     * @param filePath give the log file path.
+    * @return is return true or false.
     */
-  def checkFileExtension(filePath: String): Boolean = {
-    logger.info("checkFileExtension(filePath)::entry")
+  protected def checkFileExtension(filePath: String): Boolean = {
     val stopWatch = new StopWatch()
     stopWatch.start()
-    val file =
-      File(filePath).exists
-    if (file)
-      if (filePath.endsWith(".log")) {
-        stopWatch.stop()
-        logger.info(
-          "checkFileExtension(filePath)::normal_exit | " + stopWatch
-            .getTime() + " ms "
-        )
-        return true
-      }
+    logger.info("checkFileExtension(filePath)::entry")
+    if (File(filePath).exists && filePath.endsWith(".log")) {
+      stopWatch.stop()
+      logger.info(
+        "checkFileExtension(filePath)::normal_exit | " + stopWatch
+          .getTime() + " ms "
+      )
+      return true
+    }
     stopWatch.stop()
     logger.info(
       "checkFileExtension(filePath)::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
     false
+  }
+
+  /** That output CSV file path check valid or not.
+    * @param outputCSVFilePath write the output in csv file give the csv file path.
+    * @return that file path check is valid and create the file path
+    */
+  protected def createCSVFilePath(outputCSVFilePath: String): String = {
+    val stopWatch = new StopWatch()
+    stopWatch.start()
+    logger.info("createCSVFilePath(outputCSVFilePath)::entry")
+    var filePath = outputCSVFilePath
+    if (File(filePath).exists) {
+      if (filePath.endsWith(".csv")) {
+        var count = 1
+        filePath = filePath
+          .split("\\.csv")
+          .map(x =>
+            x
+              + s"$count" + ".csv"
+          )
+          .mkString("")
+        count += 1
+        stopWatch.stop()
+        logger.info(
+          "createCSVFilePath(outputCSVFilePath)::normal_exit | " + stopWatch
+            .getTime() + " ms "
+        )
+        filePath
+      } else {
+        var pathCreating = ""
+        filePath
+          .split("/")
+          .foreach(x => if (!x.contains(".")) pathCreating += x + "/")
+        filePath = pathCreating + "/log-analyzer.csv"
+        stopWatch.stop()
+        logger.debug(
+          "createCSVFilePath(outputCSVFilePath)::normal_exit | " + stopWatch
+            .getTime() + " ms "
+        )
+        filePath
+      }
+    } else {
+      stopWatch.stop()
+      logger.debug(
+        "createCSVFilePath(outputCSVFilePath)::normal_exit | " + stopWatch
+          .getTime() + " ms "
+      )
+      "give the valid output csv path. Example of valid path=> /home/profile/IdeaProjects/Log_Analyzer/logFile/"
+    }
   }
 
   /** read that log file.
@@ -47,7 +94,8 @@ class ProcessLogFile extends LazyLogging {
         "readLogFile(filePath)::normal_exit | " + stopWatch
           .getTime() + " ms "
       )
-      fromFile(filePath).mkString("")
+      val file = fromFile(filePath)
+      file.mkString("")
     } catch {
       case f: FileNotFoundException =>
         logger.error("readLogFile :: error | " + stopWatch.getTime() + " ms ")
@@ -67,7 +115,7 @@ class ProcessLogFile extends LazyLogging {
     val stopWatch = new StopWatch()
     stopWatch.start()
     logger.info("jobPatternMatching(strLogContent)::entry")
-    var processNameTime = new ListBuffer[(String, Int)]()
+    val processNameTime = new ListBuffer[(String, Int)]()
     val jobPatternMatchingRegex =
       """[\w]+[(]([\w \-_,/=]+)?[)]+[:]+[\w]+[ |]+[0-9]+[ms ]+""".r
     val processNameMatchingRegex = """[\w]+[(]([\w \-_,/=]+)?[)]+""".r
@@ -131,7 +179,7 @@ class ProcessLogFile extends LazyLogging {
     val processName = matchString.map(x => x._1)
     val uniqueNameArray = new ArrayBuffer[String]()
     for (i <- processName.indices) {
-      if (!(uniqueNameArray.contains(processName(i)))) {
+      if (!uniqueNameArray.contains(processName(i))) {
         uniqueNameArray += processName(i)
       }
     }
@@ -153,12 +201,12 @@ class ProcessLogFile extends LazyLogging {
     stopWatch.start()
     logger.info("processMinValue(ListBuffer[(String,Int)])::entry")
     val uniqueStr = strUniqueValue(matchString)
-    var minValues = new ArrayBuffer[Int]()
-    var collection = new ArrayBuffer[Int]()
+    val minValues = new ArrayBuffer[Int]()
+    val collection = new ArrayBuffer[Int]()
     uniqueStr.foreach { i => //compare uniqueStr and matchString.
-      var uniStr = i
+      val uniStr = i
       matchString.foreach { j =>
-        var matchCurrentString = j._1
+        val matchCurrentString = j._1
         if (uniStr == matchCurrentString) {
           collection += j._2
         }
@@ -184,18 +232,18 @@ class ProcessLogFile extends LazyLogging {
     stopWatch.start()
     logger.info("processMaxValue(ListBuffer[(String,Int)])::entry")
     val uniqueStr = strUniqueValue(matchString)
-    var maxValues = new ArrayBuffer[Int]()
-    var collection = new ArrayBuffer[Int]()
+    val maxValues = new ArrayBuffer[Int]()
+    val individualProcessTimeCollection = new ArrayBuffer[Int]()
     uniqueStr.foreach { i => //compare uniqueStr and matchString.
-      var uniStr = i
+      val uniStr = i
       matchString.foreach { j =>
-        var matchCurrentString = j._1
+        val matchCurrentString = j._1
         if (uniStr == matchCurrentString) {
-          collection += j._2
+          individualProcessTimeCollection += j._2
         }
       }
-      maxValues += collection.max
-      collection.clear()
+      maxValues += individualProcessTimeCollection.max
+      individualProcessTimeCollection.clear()
     }
     stopWatch.stop()
     logger.info(
@@ -215,12 +263,12 @@ class ProcessLogFile extends LazyLogging {
     stopWatch.start()
     logger.info("processMeanValue(ListBuffer[(String,Int)])::entry")
     val uniqueStr = strUniqueValue(matchString)
-    var meanValues = new ArrayBuffer[Double]()
-    var collection = new ArrayBuffer[Int]()
+    val meanValues = new ArrayBuffer[Double]()
+    val collection = new ArrayBuffer[Int]()
     uniqueStr.foreach { i => //compare uniqueStr and matchString.
-      var uniStr = i
+      val uniStr = i
       matchString.foreach { j =>
-        var matchCurrentString = j._1
+        val matchCurrentString = j._1
         if (uniStr == matchCurrentString) {
           collection += j._2
         }
@@ -235,4 +283,5 @@ class ProcessLogFile extends LazyLogging {
     )
     meanValues
   }
+
 }
