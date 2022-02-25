@@ -83,7 +83,7 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
     */
   def summariseLogContent(
       csvFilePath: String,
-      uniqueStr: ArrayBuffer[String],
+      uniqueStr: Array[String],
       miniValue: ArrayBuffer[Int],
       maxValue: ArrayBuffer[Int],
       meanValue: ArrayBuffer[Double]
@@ -133,7 +133,8 @@ object LogAnalyzerObject extends App {
   println(
     logAnalyzerObject
       .analyzeLogFile(
-        logFilePath = "logFile/expert-system.log",
+        logFilePath =
+          "/home/lokeshwaranm/snap/teams/6/Downloads/expert-system (1).log",
         "/home/lokeshwaranm/Documents/"
       )
   )

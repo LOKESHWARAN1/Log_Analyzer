@@ -117,7 +117,7 @@ class ProcessLogFile extends LazyLogging {
     logger.info("jobPatternMatching(strLogContent)::entry")
     val processNameTime = new ListBuffer[(String, Int)]()
     val jobPatternMatchingRegex =
-      """[\w]+[(]([\w \-_,/=]+)?[)]+[:]+[\w]+[ |]+[0-9]+[ms ]+""".r
+      """[\w]+[(]([\w \-_,/=]+)?[)][:]+[\w]+[ |]+[0-9]+[ms ]+""".r
     val processNameMatchingRegex = """[\w]+[(]([\w \-_,/=]+)?[)]+""".r
     val processTimeMatchingRegex = """([0-9]+[ ms])""".r
     val processTimeRegex = """[0-9]+""".r
@@ -172,23 +172,17 @@ class ProcessLogFile extends LazyLogging {
     */
   protected def strUniqueValue(
       matchString: ListBuffer[(String, Int)]
-  ): ArrayBuffer[String] = {
+  ): Array[String] = {
     val stopWatch = new StopWatch()
     stopWatch.start()
     logger.info("strUniqueValue(ListBuffer[(String,Int)])::entry")
-    val processName = matchString.map(x => x._1)
-    val uniqueNameArray = new ArrayBuffer[String]()
-    for (i <- processName.indices) {
-      if (!uniqueNameArray.contains(processName(i))) {
-        uniqueNameArray += processName(i)
-      }
-    }
+    val processName = matchString.map(x => x._1).distinct.toArray
     stopWatch.stop()
     logger.info(
       "strUniqueValue(ListBuffer[(String,Int)])::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
-    uniqueNameArray
+    processName
   }
 
   /** process of task taking minimum time.
@@ -273,7 +267,9 @@ class ProcessLogFile extends LazyLogging {
           collection += j._2
         }
       }
-      meanValues += ((collection.sum).toDouble / collection.length.toDouble)
+      meanValues += "%.3f"
+        .format(((collection.sum).toDouble / collection.length.toDouble))
+        .toDouble
       collection.clear()
     }
     stopWatch.stop()
@@ -284,4 +280,89 @@ class ProcessLogFile extends LazyLogging {
     meanValues
   }
 
+  def createRegEx(
+      exampleProcessName: String,
+      exampleProcessTime: String
+  ): String = {
+    var processNameRegEx = ""
+    var processTimeRegEx = ""
+    val arrayProcessName = exampleProcessName.toArray
+    val arrayMilliSecStr = exampleProcessTime.toArray
+    for (i <- arrayProcessName.indices) {
+      arrayProcessName(i) match {
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          if (processNameRegEx.endsWith("\\d")) {
+            processNameRegEx += "+"
+          } else {
+            processNameRegEx += "\\d"
+          }
+        case 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' |
+            'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' |
+            'W' | 'X' | 'Y' | 'Z' =>
+          if (processNameRegEx.endsWith("[A-Z]")) {
+            processNameRegEx += "+"
+          } else {
+            processNameRegEx += "[A-Z]"
+          }
+        case 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' |
+            'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' |
+            'w' | 'x' | 'y' | 'z' =>
+          if (processNameRegEx.endsWith("[a-z]")) {
+            processNameRegEx += "+"
+          } else {
+            processNameRegEx += "[a-z]"
+          }
+        case ' ' => processNameRegEx += "[ ]"
+        case ':' => processNameRegEx += "[:]"
+        case '-' => processNameRegEx += "[\\-]"
+        case '/' => processNameRegEx += "[/]"
+        case '.' => processNameRegEx += "[.]"
+        case '(' => processNameRegEx += "[(]"
+        case ')' => processNameRegEx += "[)]"
+        case ',' => processNameRegEx += "[,]"
+        case '_' => processNameRegEx += "[_]"
+        case _ =>
+          processNameRegEx = s"${arrayProcessName(i)} not matching the case."
+          return processNameRegEx
+      }
+    }
+    for (i <- arrayMilliSecStr.indices) {
+      arrayMilliSecStr(i) match {
+        case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
+          if (processTimeRegEx.endsWith("\\d+")) {
+            processTimeRegEx += ""
+          } else {
+            processTimeRegEx += "\\d+"
+          }
+        case 'C' | 'D' | 'E' | 'I' | 'L' | 'M' | 'N' | 'O' | 'S' =>
+          if (processTimeRegEx.endsWith("[A-Z]+")) {
+            processTimeRegEx += ""
+          } else {
+            processTimeRegEx += "[A-Z]+"
+          }
+        case 'c' | 'd' | 'e' | 'i' | 'l' | 'm' | 'n' | 'o' | 's' =>
+          if (processTimeRegEx.endsWith("[a-z]+")) {
+            processTimeRegEx += ""
+          } else {
+            processTimeRegEx += "[a-z]+"
+          }
+        case ' ' => processTimeRegEx += "[ ]"
+        case ':' => processTimeRegEx += "[:]"
+        case '-' => processTimeRegEx += "[\\-]"
+        case '/' => processTimeRegEx += "[/]"
+        case '.' => processTimeRegEx += "[.]"
+        case _ =>
+          processTimeRegEx = s"${arrayMilliSecStr(i)} not matching the case."
+          return processTimeRegEx
+      }
+    }
+    processNameRegEx
+//    val mixed = "[A-Za-z]+"
+//    val upper = "[A-Z]"
+//    val lower = "[a-z]"
+//    val number = "[0-9]"
+//    val numbers = "[0-9]+"
+//    val simples = ""
+
+  }
 }
