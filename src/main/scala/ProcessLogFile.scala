@@ -1,10 +1,12 @@
 import org.apache.commons.lang3.time.StopWatch
 
-import java.io.FileNotFoundException
+import java.io.{FileNotFoundException, PrintWriter}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.reflect.io.File
 import scala.io.Source.fromFile
 import com.typesafe.scalalogging.LazyLogging
+
+import scala.collection.immutable.ListMap
 
 class ProcessLogFile extends LazyLogging {
 
@@ -117,8 +119,8 @@ class ProcessLogFile extends LazyLogging {
     logger.info("jobPatternMatching(strLogContent)::entry")
     val processNameTime = new ListBuffer[(String, Int)]()
     val jobPatternMatchingRegex =
-      """[\w]+[(]([\w \-_,/=]+)?[)][:]+[\w]+[ |]+[0-9]+[ms ]+""".r
-    val processNameMatchingRegex = """[\w]+[(]([\w \-_,/=]+)?[)]+""".r
+      """[\w]+[(]([\w \-_,/=]+)?[)][:]+[\w]+[ |]+[0-9]+[ms ]""".r
+    val processNameMatchingRegex = """[\w]+[(]([\w \-_,/=]+)?[)]""".r
     val processTimeMatchingRegex = """([0-9]+[ ms])""".r
     val processTimeRegex = """[0-9]+""".r
 
@@ -175,11 +177,11 @@ class ProcessLogFile extends LazyLogging {
   ): Array[String] = {
     val stopWatch = new StopWatch()
     stopWatch.start()
-    logger.info("strUniqueValue(ListBuffer[(String,Int)])::entry")
-    val processName = matchString.map(x => x._1).distinct.toArray
+    logger.info("strUniqueValue(String,Int)::entry")
+    val processName = matchString.map(x => x._1).distinct.toArray.sorted
     stopWatch.stop()
     logger.info(
-      "strUniqueValue(ListBuffer[(String,Int)])::normal_exit | " + stopWatch
+      "strUniqueValue(String,Int)::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
     processName
@@ -193,7 +195,7 @@ class ProcessLogFile extends LazyLogging {
   ): ArrayBuffer[Int] = {
     val stopWatch = new StopWatch()
     stopWatch.start()
-    logger.info("processMinValue(ListBuffer[(String,Int)])::entry")
+    logger.info("processMinValue(String,Int)::entry")
     val uniqueStr = strUniqueValue(matchString)
     val minValues = new ArrayBuffer[Int]()
     val collection = new ArrayBuffer[Int]()
@@ -210,7 +212,7 @@ class ProcessLogFile extends LazyLogging {
     }
     stopWatch.stop()
     logger.info(
-      "processMinValue(ListBuffer[(String,Int)])::normal_exit | " + stopWatch
+      "processMinValue(String,Int)::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
     minValues
@@ -224,7 +226,7 @@ class ProcessLogFile extends LazyLogging {
   ): ArrayBuffer[Int] = {
     val stopWatch = new StopWatch()
     stopWatch.start()
-    logger.info("processMaxValue(ListBuffer[(String,Int)])::entry")
+    logger.info("processMaxValue(String,Int)::entry")
     val uniqueStr = strUniqueValue(matchString)
     val maxValues = new ArrayBuffer[Int]()
     val individualProcessTimeCollection = new ArrayBuffer[Int]()
@@ -241,7 +243,7 @@ class ProcessLogFile extends LazyLogging {
     }
     stopWatch.stop()
     logger.info(
-      "processMaxValue(ListBuffer[(String,Int)])::normal_exit | " + stopWatch
+      "processMaxValue(String,Int)::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
     maxValues
@@ -255,7 +257,7 @@ class ProcessLogFile extends LazyLogging {
   ): ArrayBuffer[Double] = {
     val stopWatch = new StopWatch()
     stopWatch.start()
-    logger.info("processMeanValue(ListBuffer[(String,Int)])::entry")
+    logger.info("processMeanValue(String,Int)::entry")
     val uniqueStr = strUniqueValue(matchString)
     val meanValues = new ArrayBuffer[Double]()
     val collection = new ArrayBuffer[Int]()
@@ -268,18 +270,43 @@ class ProcessLogFile extends LazyLogging {
         }
       }
       meanValues += "%.3f"
-        .format(((collection.sum).toDouble / collection.length.toDouble))
+        .format(collection.sum.toDouble / collection.length.toDouble)
         .toDouble
       collection.clear()
     }
     stopWatch.stop()
     logger.info(
-      "processMeanValue(ListBuffer[(String,Int)])::normal_exit | " + stopWatch
+      "processMeanValue(String,Int)::normal_exit | " + stopWatch
         .getTime() + " ms "
     )
     meanValues
   }
 
+  /** how many times process is running count.
+    * @param matchString process of task name and times.
+    * @return total process running counts.
+    */
+  def getProcessRunningCount(
+      matchString: ListBuffer[(String, Int)]
+  ): Array[Int] = {
+    val stopWatch = new StopWatch()
+    stopWatch.start()
+    logger.info("processRunTotalCount(String,Int)::entry")
+    val totalValuesWithCount =
+      matchString //Getting for how many times process repeat total counts
+        .map(x => x._1)
+        .map((_, 1))
+        .groupBy(_._1)
+        .map(x => (x._1, x._2.size))
+    val sortedValues = ListMap(
+      totalValuesWithCount.toSeq.sortWith(_._1 < _._1): _*
+    )
+    logger.info(
+      "processRunTotalCount(String,Int)::normal_exit | " + stopWatch
+        .getTime() + " ms "
+    )
+    sortedValues.values.toArray
+  }
   def createRegEx(
       exampleProcessName: String,
       exampleProcessTime: String
@@ -357,12 +384,12 @@ class ProcessLogFile extends LazyLogging {
       }
     }
     processNameRegEx
-//    val mixed = "[A-Za-z]+"
-//    val upper = "[A-Z]"
-//    val lower = "[a-z]"
-//    val number = "[0-9]"
-//    val numbers = "[0-9]+"
-//    val simples = ""
+    //    val mixed = "[A-Za-z]+"
+    //    val upper = "[A-Z]"
+    //    val lower = "[a-z]"
+    //    val number = "[0-9]"
+    //    val numbers = "[0-9]+"
+    //    val simples = ""
 
   }
 }

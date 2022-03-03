@@ -2,7 +2,6 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.lang3.time.StopWatch
 
 import java.io.PrintWriter
-import java.util.Date
 import scala.collection.mutable.ArrayBuffer
 
 class LogAnalyzer extends ProcessLogFile with LazyLogging {
@@ -42,10 +41,12 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
                   val processTimeMin = processMinValue(jobPatternMatch)
                   val processTimeMax = processMaxValue(jobPatternMatch)
                   val processTimeMean = processMeanValue(jobPatternMatch)
+                  val processCount = getProcessRunningCount(jobPatternMatch)
                   val csvFileConvert =
                     summariseLogContent(
                       csvFilePath,
                       uniqueStr,
+                      processCount,
                       processTimeMin,
                       processTimeMax,
                       processTimeMean
@@ -72,6 +73,7 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
       )
       "Invalid log file or file path"
     }
+
   }
 
   /** Given the unique Process of task name and Process of task taking time of minimum,maximum and average the data write to csv file.
@@ -81,9 +83,10 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
     * @param meanValue process of task taking total time of meanValue.
     * @return perform the operation return the csv file.
     */
-  def summariseLogContent(
+  protected def summariseLogContent(
       csvFilePath: String,
       uniqueStr: Array[String],
+      processCount: Array[Int],
       miniValue: ArrayBuffer[Int],
       maxValue: ArrayBuffer[Int],
       meanValue: ArrayBuffer[Double]
@@ -100,6 +103,9 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
       for (i <- uniqueStr.indices) {
         strCSV +=
           count + "\t" + "PROCESS NAME : " + "\t" + uniqueStr(i) + "\n" + "\t" +
+            "PROCESS RUNNING TOTAL COUNT : " + "\t" + processCount(
+              i
+            ) + "\n" + "\t" +
             "PROCESS TAKING MINIMUM TIME : " + "\t" + miniValue(
               i
             ) + "\n" + "\t" +
