@@ -1,3 +1,4 @@
+package com.logAnalyzer
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.lang3.time.StopWatch
 
@@ -134,15 +135,15 @@ class LogAnalyzer extends ProcessLogFile with LazyLogging {
     csvFileCreate
   }
 }
-object LogAnalyzerObject extends App {
-  val logAnalyzerObject = new LogAnalyzer
-  println(
-    logAnalyzerObject
-      .analyzeLogFile(
-        logFilePath =
-          "/home/lokeshwaranm/snap/teams/6/Downloads/expert-system (1).log",
-        "/home/lokeshwaranm/Documents/"
-      )
-  )
-
-}
+//object LogAnalyzerObject extends App {
+//  val logAnalyzerObject = new LogAnalyzer
+//  println(
+//    logAnalyzerObject
+//      .analyzeLogFile(
+//        logFilePath =
+//          "/home/lokeshwaranm/snap/teams/6/Downloads/expert-system (1).log",
+//        "/home/lokeshwaranm/Documents/"
+//      )
+//  )
+//
+//}
